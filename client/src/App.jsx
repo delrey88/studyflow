@@ -5,23 +5,91 @@ function App() {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
 
-  // Estados do Pomodoro (25 minutos = 1500 segundos)
+  // Estados do Pomodoro Avançado
+  const [mode, setMode] = useState('work') // 'work', 'shortBreak', 'longBreak'
   const [secondsLeft, setSecondsLeft] = useState(1500)
   const [isActive, setIsActive] = useState(false)
+  const [pomodoroCount, setPomodoroCount] = useState(0)
 
+  const TIMES = {
+    work: 1500,
+    shortBreak: 300,
+    longBreak: 900
+  }
+
+  const COLORS = {
+    work: '#4f46e5',
+    shortBreak: '#10b981',
+    longBreak: '#3b82f6'
+  }
+
+  // Pedir permissão para notificações do navegador ao carregar
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // Som de alerta via Web Audio API
+  const playSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioCtx.createOscillator()
+      const gainNode = audioCtx.createGain()
+      oscillator.type = 'sine'
+      oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime)
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime)
+      oscillator.connect(gainNode)
+      gainNode.connect(audioCtx.destination)
+      oscillator.start()
+      oscillator.stop(audioCtx.currentTime + 0.5)
+    } catch (e) {
+      console.error('Erro ao tocar som:', e)
+    }
+  }
+
+  const sendNotification = (title, body) => {
+    playSound()
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body })
+    }
+  }
+
+  // Lógica do Timer e Transição Automática
   useEffect(() => {
     let timer = null
     if (isActive && secondsLeft > 0) {
       timer = setInterval(() => {
         setSecondsLeft((prev) => prev - 1)
       }, 1000)
-    } else if (secondsLeft === 0) {
+    } else if (isActive && secondsLeft === 0) {
       setIsActive(false)
-      alert('Pomodoro finalizado! Hora de descansar 🍅')
-      setSecondsLeft(1500)
+      if (mode === 'work') {
+        const newCount = pomodoroCount + 1
+        setPomodoroCount(newCount)
+        if (newCount % 4 === 0) {
+          setMode('longBreak')
+          setSecondsLeft(TIMES.longBreak)
+          sendNotification('Pomodoro Concluído!', 'Hora de uma pausa longa 🍅')
+        } else {
+          setMode('shortBreak')
+          setSecondsLeft(TIMES.shortBreak)
+          sendNotification('Pomodoro Concluído!', 'Hora de uma pausa curta ☕')
+        }
+      } else {
+        setMode('work')
+        setSecondsLeft(TIMES.work)
+        sendNotification('Pausa Finalizada!', 'Hora de voltar ao foco 🚀')
+      }
     }
     return () => clearInterval(timer)
-  }, [isActive, secondsLeft])
+  }, [isActive, secondsLeft, mode, pomodoroCount])
+
+  const switchMode = (newMode) => {
+    setIsActive(false)
+    setMode(newMode)
+    setSecondsLeft(TIMES[newMode])
+  }
 
   const formatTime = (sec) => {
     const minutes = Math.floor(sec / 60)
@@ -29,6 +97,11 @@ function App() {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
   }
 
+  // Cálculo da barra de progresso
+  const totalTime = TIMES[mode]
+  const progress = ((totalTime - secondsLeft) / totalTime) * 100
+
+  // Requisições para o Backend (Tarefas)
   useEffect(() => {
     fetch('https://studyflow-rzyn.onrender.com/tasks')
       .then((res) => res.json())
@@ -79,25 +152,57 @@ function App() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '50px auto', fontFamily: 'sans-serif', padding: '20px' }}>
-      <h1 style={{ textAlign: 'center', color: '#4f46e5' }}>StudyFlow 📚🚀</h1>
+      <h1 style={{ textAlign: 'center', color: COLORS[mode] }}>StudyFlow 📚🚀</h1>
       <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>Organize seus estudos e potencialize seu aprendizado</p>
       
-      {/* Bloco do Pomodoro */}
-      <div style={{ background: '#e0e7ff', padding: '20px', borderRadius: '8px', textAlign: 'center', marginBottom: '30px' }}>
-        <h2 style={{ color: '#3730a3', margin: '0 0 10px 0' }}>🍅 Pomodoro Timer</h2>
-        <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#312e81', marginBottom: '15px' }}>
+      {/* Bloco do Pomodoro Aprimorado */}
+      <div style={{ background: '#f8fafc', border: `2px solid ${COLORS[mode]}`, padding: '20px', borderRadius: '12px', textAlign: 'center', marginBottom: '30px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+        
+        {/* Botões de Troca Manual de Modo */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '15px' }}>
+          <button 
+            onClick={() => switchMode('work')}
+            style={{ padding: '6px 12px', background: mode === 'work' ? COLORS.work : '#e2e8f0', color: mode === 'work' ? '#fff' : '#475569', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Foco
+          </button>
+          <button 
+            onClick={() => switchMode('shortBreak')}
+            style={{ padding: '6px 12px', background: mode === 'shortBreak' ? COLORS.shortBreak : '#e2e8f0', color: mode === 'shortBreak' ? '#fff' : '#475569', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Pausa Curta
+          </button>
+          <button 
+            onClick={() => switchMode('longBreak')}
+            style={{ padding: '6px 12px', background: mode === 'longBreak' ? COLORS.longBreak : '#e2e8f0', color: mode === 'longBreak' ? '#fff' : '#475569', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Pausa Longa
+          </button>
+        </div>
+
+        <div style={{ fontSize: '48px', fontWeight: 'bold', color: COLORS[mode], marginBottom: '10px' }}>
           {formatTime(secondsLeft)}
         </div>
+
+        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '15px' }}>
+          Pomodoros concluídos: <strong>{pomodoroCount}</strong>
+        </p>
+
+        {/* Barra de Progresso Visual */}
+        <div style={{ width: '100%', background: '#e2e8f0', height: '8px', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
+          <div style={{ width: `${progress}%`, background: COLORS[mode], height: '100%', transition: 'width 1s linear' }}></div>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
           <button 
             onClick={() => setIsActive(!isActive)}
-            style={{ padding: '8px 16px', background: isActive ? '#f59e0b' : '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            style={{ padding: '10px 20px', background: isActive ? '#f59e0b' : COLORS[mode], color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}
           >
             {isActive ? 'Pausar' : 'Iniciar'}
           </button>
           <button 
-            onClick={() => { setIsActive(false); setSecondsLeft(1500); }}
-            style={{ padding: '8px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            onClick={() => { setIsActive(false); setSecondsLeft(TIMES[mode]); }}
+            style={{ padding: '10px 20px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}
           >
             Reiniciar
           </button>
