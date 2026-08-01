@@ -1,33 +1,21 @@
-# 📚 StudyFlow 🚀
+# StudyFlow 📚🚀
 
-> Um aplicativo Full-Stack de gerenciamento de estudos projetado para ajudar estudantes a organizar rotinas, acompanhar tarefas e otimizar o aprendizado de forma simples e eficiente.
+O **StudyFlow** é uma aplicação Full Stack desenvolvida para ajudar estudantes a organizarem suas rotinas de estudos, gerenciarem tarefas pendentes e manterem o foco com o auxílio do método Pomodoro.
 
----
+## ✨ Funcionalidades
+
+* **Gerenciamento de Tarefas:** Adicione, marque como concluída ou exclua tarefas de estudo facilmente.
+* **🍅 Pomodoro Timer:** Um cronômetro integrado de 25 minutos para gerenciar sessões de foco e intervalos de descanso.
+* **Persistência de Dados:** Dados salvos com segurança utilizando um banco de dados SQLite no backend.
 
 ## 🛠️ Tecnologias Utilizadas
 
-Este projeto foi desenvolvido utilizando tecnologias modernas do ecossistema JavaScript:
+* **Frontend:** React, Vite, JavaScript, CSS
+* **Backend:** Node.js, Express, SQLite (`sqlite3`)
+* **Deploy:** 
+  * Frontend: Netlify
+  * Backend & Banco de Dados: Render
 
-* **Front-end:** React.js, Vite, HTML5, CSS3, JavaScript (ES6+)
-* **Back-end:** Node.js, Express.js
-* **Banco de Dados:** SQLite (Armazenamento local leve e persistente)
-* **Comunicação:** REST API / Fetch API
-
----
-
-## ⚙️ Funcionalidades (CRUD Completo)
-
-- [x] **Criar:** Adicionar novas matérias ou tarefas de estudo.
-- [x] **Ler:** Listar todas as tarefas cadastradas direto do banco de dados.
-- [x] **Atualizar:** Marcar tarefas como concluídas ou desfazer a conclusão.
-- [x] **Deletar:** Remover tarefas que não são mais necessárias.
-
----
-
-## 🚀 Como Executar o Projeto Localmente
-
-Certifique-se de ter o **Node.js** instalado na sua máquina antes de continuar.
-
-### 1. Clonar o repositório
-```bash
-git clone https://github.com/delrey88/studyflow.git
+## 🌐 Acesso Online
+* **Aplicação (Frontend):** [studyflow-delrey.netlify.app](https://studyflow-delrey.netlify.app/)
+* **API (Backend):** [studyflow-rzyn.onrender.com](https://studyflow-rzyn.onrender.com/)
