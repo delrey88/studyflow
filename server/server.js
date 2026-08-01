@@ -28,6 +28,18 @@ db.run(`CREATE TABLE IF NOT EXISTS tasks (
   }
 });
 
+// Criando a tabela de sessões de estudo (Pomodoro)
+db.run(`CREATE TABLE IF NOT EXISTS sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT,
+  duration INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`, (err) => {
+  if (!err) {
+    console.log('Tabela "sessions" pronta para uso.');
+  }
+});
+
 // Rota padrão de teste
 app.get('/', (req, res) => {
   res.json({ message: "API do StudyFlow rodando com sucesso! 🚀" });
@@ -66,10 +78,6 @@ app.post('/tasks', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
-
 // 3. ROTA PARA ATUALIZAR O STATUS DA TAREFA (PUT)
 app.put('/tasks/:id', (req, res) => {
   const { id } = req.params;
@@ -97,4 +105,41 @@ app.delete('/tasks/:id', (req, res) => {
     }
     res.json({ message: 'Tarefa deletada com sucesso!' });
   });
+});
+
+// --- NOVAS ROTAS PARA AS SESSÕES (POMODORO) ---
+
+// 5. ROTA PARA LISTAR O HISTÓRICO DE SESSÕES (GET)
+app.get('/sessions', (req, res) => {
+  db.all('SELECT * FROM sessions ORDER BY id DESC', [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+// 6. ROTA PARA REGISTRAR UMA SESSÃO CONCLUÍDA (POST)
+app.post('/sessions', (req, res) => {
+  const { title, duration } = req.body;
+  const sessionTitle = title || 'Sessão de Foco';
+  const sessionDuration = duration || 25;
+
+  const sql = 'INSERT INTO sessions (title, duration) VALUES (?, ?)';
+  db.run(sql, [sessionTitle, sessionDuration], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({
+      id: this.lastID,
+      title: sessionTitle,
+      duration: sessionDuration
+    });
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
