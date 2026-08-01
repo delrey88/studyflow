@@ -4,6 +4,7 @@ import './App.css'
 function App() {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
+  const [sessions, setSessions] = useState([])
 
   // Estados do Pomodoro Avançado
   const [mode, setMode] = useState('work') // 'work', 'shortBreak', 'longBreak'
@@ -55,7 +56,20 @@ function App() {
     }
   }
 
-  // Lógica do Timer e Transição Automática
+  // Buscar Tarefas e Histórico de Sessões ao carregar
+  useEffect(() => {
+    fetch('https://studyflow-rzyn.onrender.com/tasks')
+      .then((res) => res.json())
+      .then((data) => setTasks(data))
+      .catch((err) => console.error('Erro ao buscar tarefas:', err))
+
+    fetch('https://studyflow-rzyn.onrender.com/sessions')
+      .then((res) => res.json())
+      .then((data) => setSessions(data))
+      .catch((err) => console.error('Erro ao buscar sessões:', err))
+  }, [])
+
+  // Lógica do Timer, Transição Automática e Gravação da Jornada
   useEffect(() => {
     let timer = null
     if (isActive && secondsLeft > 0) {
@@ -67,6 +81,17 @@ function App() {
       if (mode === 'work') {
         const newCount = pomodoroCount + 1
         setPomodoroCount(newCount)
+
+        // Grava a sessão concluída no backend
+        fetch('https://studyflow-rzyn.onrender.com/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Sessão de Foco Concluída 🍅', duration: 25 }),
+        })
+          .then((res) => res.json())
+          .then((data) => setSessions((prev) => [data, ...prev]))
+          .catch((err) => console.error('Erro ao salvar sessão:', err))
+
         if (newCount % 4 === 0) {
           setMode('longBreak')
           setSecondsLeft(TIMES.longBreak)
@@ -97,17 +122,8 @@ function App() {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
   }
 
-  // Cálculo da barra de progresso
   const totalTime = TIMES[mode]
   const progress = ((totalTime - secondsLeft) / totalTime) * 100
-
-  // Requisições para o Backend (Tarefas)
-  useEffect(() => {
-    fetch('https://studyflow-rzyn.onrender.com/tasks')
-      .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch((err) => console.error('Erro ao buscar tarefas:', err))
-  }, [])
 
   const addTask = (e) => {
     e.preventDefault()
@@ -158,7 +174,6 @@ function App() {
       {/* Bloco do Pomodoro Aprimorado */}
       <div style={{ background: '#f8fafc', border: `2px solid ${COLORS[mode]}`, padding: '20px', borderRadius: '12px', textAlign: 'center', marginBottom: '30px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
         
-        {/* Botões de Troca Manual de Modo */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '15px' }}>
           <button 
             onClick={() => switchMode('work')}
@@ -185,10 +200,9 @@ function App() {
         </div>
 
         <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '15px' }}>
-          Pomodoros concluídos: <strong>{pomodoroCount}</strong>
+          Pomodoros concluídos na sessão: <strong>{pomodoroCount}</strong>
         </p>
 
-        {/* Barra de Progresso Visual */}
         <div style={{ width: '100%', background: '#e2e8f0', height: '8px', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
           <div style={{ width: `${progress}%`, background: COLORS[mode], height: '100%', transition: 'width 1s linear' }}></div>
         </div>
@@ -207,6 +221,22 @@ function App() {
             Reiniciar
           </button>
         </div>
+      </div>
+
+      {/* Histórico de Sessões Concluídas */}
+      <div style={{ background: '#f1f5f9', padding: '15px', borderRadius: '8px', marginBottom: '30px' }}>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#334155' }}>🍅 Histórico de Jornadas Concluídas</h3>
+        {sessions.length === 0 ? (
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Nenhuma sessão concluída ainda. Complete um pomodoro para registrar!</p>
+        ) : (
+          <ul style={{ margin: 0, paddingLeft: '20px', maxHeight: '120px', overflowY: 'auto' }}>
+            {sessions.map((session) => (
+              <li key={session.id} style={{ fontSize: '14px', color: '#475569', marginBottom: '4px' }}>
+                {session.title} — {session.duration} min ({new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <form onSubmit={addTask} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
