@@ -5,6 +5,8 @@ function App() {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
   const [sessions, setSessions] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [serverError, setServerError] = useState(false)
 
   // Estados do Pomodoro Avançado
   const [mode, setMode] = useState('work') // 'work', 'shortBreak', 'longBreak'
@@ -56,20 +58,27 @@ function App() {
     }
   }
 
-  // Buscar Tarefas e Histórico de Sessões ao carregar
+  // Buscar Tarefas e Histórico com tratamento para o Render acordar
   useEffect(() => {
-    fetch('https://studyflow-rzyn.onrender.com/tasks')
-      .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch((err) => console.error('Erro ao buscar tarefas:', err))
-
-    fetch('https://studyflow-rzyn.onrender.com/sessions')
-      .then((res) => res.json())
-      .then((data) => setSessions(data))
-      .catch((err) => console.error('Erro ao buscar sessões:', err))
+    setIsLoading(true)
+    Promise.all([
+      fetch('https://studyflow-rzyn.onrender.com/tasks').then((res) => res.json()),
+      fetch('https://studyflow-rzyn.onrender.com/sessions').then((res) => res.json())
+    ])
+      .then(([tasksData, sessionsData]) => {
+        setTasks(tasksData)
+        setSessions(sessionsData)
+        setIsLoading(false)
+        setServerError(false)
+      })
+      .catch((err) => {
+        console.error('Erro ao conectar com a API:', err)
+        setIsLoading(false)
+        setServerError(true)
+      })
   }, [])
 
-  // Lógica do Timer, Transição Automática e Gravação da Jornada
+  // Lógica do Timer, Transição Automática e Gravação Dinâmica da Jornada
   useEffect(() => {
     let timer = null
     if (isActive && secondsLeft > 0) {
@@ -82,11 +91,14 @@ function App() {
         const newCount = pomodoroCount + 1
         setPomodoroCount(newCount)
 
-        // Grava a sessão concluída no backend
+        // Grava a sessão com duração dinâmica (TIMES.work / 60)
         fetch('https://studyflow-rzyn.onrender.com/sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: 'Sessão de Foco Concluída 🍅', duration: 25 }),
+          body: JSON.stringify({ 
+            title: 'Sessão de Foco Concluída 🍅', 
+            duration: TIMES.work / 60 
+          }),
         })
           .then((res) => res.json())
           .then((data) => setSessions((prev) => [data, ...prev]))
@@ -171,6 +183,19 @@ function App() {
       <h1 style={{ textAlign: 'center', color: COLORS[mode] }}>StudyFlow 📚🚀</h1>
       <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>Organize seus estudos e potencialize seu aprendizado</p>
       
+      {/* Aviso de Servidor Acordando / Carregando */}
+      {isLoading && (
+        <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', padding: '10px', borderRadius: '6px', textAlign: 'center', marginBottom: '20px', color: '#3730a3', fontSize: '14px' }}>
+          ⏳ Conectando ao servidor (o plano gratuito do Render pode levar até 50 segundos para acordar)...
+        </div>
+      )}
+
+      {serverError && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '10px', borderRadius: '6px', textAlign: 'center', marginBottom: '20px', color: '#991b1b', fontSize: '14px' }}>
+          ⚠️ Servidor instável ou inativo no momento. As alterações podem não salvar.
+        </div>
+      )}
+
       {/* Bloco do Pomodoro Aprimorado */}
       <div style={{ background: '#f8fafc', border: `2px solid ${COLORS[mode]}`, padding: '20px', borderRadius: '12px', textAlign: 'center', marginBottom: '30px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
         
