@@ -6,7 +6,7 @@ function App() {
   const [newTask, setNewTask] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:5000/tasks')
+    fetch('https://studyflow-rzyn.onrender.com/tasks')
       .then((res) => res.json())
       .then((data) => setTasks(data))
       .catch((err) => console.error('Erro ao buscar tarefas:', err))
@@ -16,7 +16,7 @@ function App() {
     e.preventDefault()
     if (!newTask.trim()) return
 
-    fetch('http://localhost:5000/tasks', {
+    fetch('https://studyflow-rzyn.onrender.com/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newTask }),
@@ -32,7 +32,7 @@ function App() {
   const toggleTask = (id, currentCompleted) => {
     const newCompleted = currentCompleted ? 0 : 1
 
-    fetch(`http://localhost:5000/tasks/${id}`, {
+    fetch(`https://studyflow-rzyn.onrender.com/tasks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: newCompleted }),
@@ -44,7 +44,7 @@ function App() {
   }
 
   const deleteTask = (id) => {
-    fetch(`http://localhost:5000/tasks/${id}`, {
+    fetch(`https://studyflow-rzyn.onrender.com/tasks/${id}`, {
       method: 'DELETE',
     })
       .then(() => {
