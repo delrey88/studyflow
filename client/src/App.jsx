@@ -5,6 +5,30 @@ function App() {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
 
+  // Estados do Pomodoro (25 minutos = 1500 segundos)
+  const [secondsLeft, setSecondsLeft] = useState(1500)
+  const [isActive, setIsActive] = useState(false)
+
+  useEffect(() => {
+    let timer = null
+    if (isActive && secondsLeft > 0) {
+      timer = setInterval(() => {
+        setSecondsLeft((prev) => prev - 1)
+      }, 1000)
+    } else if (secondsLeft === 0) {
+      setIsActive(false)
+      alert('Pomodoro finalizado! Hora de descansar 🍅')
+      setSecondsLeft(1500)
+    }
+    return () => clearInterval(timer)
+  }, [isActive, secondsLeft])
+
+  const formatTime = (sec) => {
+    const minutes = Math.floor(sec / 60)
+    const seconds = sec % 60
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }
+
   useEffect(() => {
     fetch('https://studyflow-rzyn.onrender.com/tasks')
       .then((res) => res.json())
@@ -56,8 +80,30 @@ function App() {
   return (
     <div style={{ maxWidth: '600px', margin: '50px auto', fontFamily: 'sans-serif', padding: '20px' }}>
       <h1 style={{ textAlign: 'center', color: '#4f46e5' }}>StudyFlow 📚🚀</h1>
-      <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>Organize seus estudos e potencialize seu aprendizado</p>
+      <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>Organize seus estudos e potencialize seu aprendizado</p>
       
+      {/* Bloco do Pomodoro */}
+      <div style={{ background: '#e0e7ff', padding: '20px', borderRadius: '8px', textAlign: 'center', marginBottom: '30px' }}>
+        <h2 style={{ color: '#3730a3', margin: '0 0 10px 0' }}>🍅 Pomodoro Timer</h2>
+        <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#312e81', marginBottom: '15px' }}>
+          {formatTime(secondsLeft)}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          <button 
+            onClick={() => setIsActive(!isActive)}
+            style={{ padding: '8px 16px', background: isActive ? '#f59e0b' : '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            {isActive ? 'Pausar' : 'Iniciar'}
+          </button>
+          <button 
+            onClick={() => { setIsActive(false); setSecondsLeft(1500); }}
+            style={{ padding: '8px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Reiniciar
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={addTask} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <input
           type="text"
