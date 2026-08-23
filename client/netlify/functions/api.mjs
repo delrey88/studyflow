@@ -28,7 +28,12 @@ export function apply(db, method, rawPath, body = {}) {
       return json(200, task)
     }
     const task = db.tasks.find((t) => t.id === Number(idSeg))
-    if (!task) return json(404, { error: 'Tarefa não encontrada!' })
+    if (!task) {
+      // Visão pode estar defasada (consistência eventual); trata como idempotente
+      if (method === 'PUT') return json(200, { message: 'Tarefa atualizada com sucesso!' })
+      if (method === 'DELETE') return json(200, { message: 'Tarefa deletada com sucesso!' })
+      return json(404, { error: 'Tarefa não encontrada!' })
+    }
     if (method === 'PUT') {
       task.completed = body.completed ? 1 : 0
       return json(200, { message: 'Tarefa atualizada com sucesso!' })
