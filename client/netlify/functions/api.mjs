@@ -6,10 +6,10 @@ const json = (status, body) => ({
   body: JSON.stringify(body)
 })
 
-const emptyDb = () => ({ tasks: [], sessions: [], seq: { task: 0, session: 0 } })
-
 // Roteador puro (mesmas rotas/semântica do Express original em server/server.js)
-export function apply(db, method, rawPath, body = {}) {
+// Armazenamento: uma chave por item ("task:<id>" / "session:<id>") — mutações
+// são autoritativas na origem, sem depender de visões em cache.
+export async function apply(store, method, rawPath, body = {}) {
   const path = String(rawPath || '/')
     .replace(/^\/\.netlify\/functions\/api/, '')
     .replace(/^\/api/, '')
@@ -18,44 +18,45 @@ export function apply(db, method, rawPath, body = {}) {
 
   if (resource === 'tasks') {
     if (method === 'GET' && !idSeg) {
-      return json(200, [...db.tasks].sort((a, b) => a.id - b.id))
+      const { blobs } = await store.list({ prefix: 'task:' })
+      const items = await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' })))
+      return json(200, items.filter(Boolean).sort((a, b) => a.id - b.id))
     }
     if (method === 'POST' && !idSeg) {
       const title = typeof body.title === 'string' ? body.title.trim() : ''
       if (!title) return json(400, { error: 'O título da tarefa é obrigatório!' })
-      const task = { id: ++db.seq.task, title, completed: 0 }
-      db.tasks.push(task)
+      const task = { id: Date.now(), title, completed: 0 }
+      await store.setJSON(`task:${task.id}`, task)
       return json(200, task)
     }
-    const task = db.tasks.find((t) => t.id === Number(idSeg))
-    if (!task) {
-      // Visão pode estar defasada (consistência eventual); trata como idempotente
-      if (method === 'PUT') return json(200, { message: 'Tarefa atualizada com sucesso!' })
-      if (method === 'DELETE') return json(200, { message: 'Tarefa deletada com sucesso!' })
-      return json(404, { error: 'Tarefa não encontrada!' })
-    }
+    const key = `task:${Number(idSeg)}`
     if (method === 'PUT') {
+      const task = await store.get(key, { type: 'json' })
+      if (!task) return json(200, { message: 'Tarefa atualizada com sucesso!' })
       task.completed = body.completed ? 1 : 0
+      await store.setJSON(key, task)
       return json(200, { message: 'Tarefa atualizada com sucesso!' })
     }
     if (method === 'DELETE') {
-      db.tasks = db.tasks.filter((t) => t.id !== task.id)
+      await store.delete(key)
       return json(200, { message: 'Tarefa deletada com sucesso!' })
     }
   }
 
   if (resource === 'sessions') {
     if (method === 'GET' && !idSeg) {
-      return json(200, [...db.sessions].sort((a, b) => b.id - a.id))
+      const { blobs } = await store.list({ prefix: 'session:' })
+      const items = await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' })))
+      return json(200, items.filter(Boolean).sort((a, b) => b.id - a.id))
     }
     if (method === 'POST' && !idSeg) {
       const session = {
-        id: ++db.seq.session,
+        id: Date.now(),
         title: body.title || 'Sessão de Foco',
         duration: Number(body.duration) || 25,
         created_at: new Date().toISOString()
       }
-      db.sessions.push(session)
+      await store.setJSON(`session:${session.id}`, session)
       return json(200, session)
     }
   }
@@ -68,15 +69,8 @@ export async function handler(event) {
     connectLambda(event)
     const store = getStore('studyflow')
     const method = event.httpMethod
-    const db = (await store.get('db', { type: 'json' })) ?? emptyDb()
-
     const body = event.body ? JSON.parse(event.body) : {}
-    const res = apply(db, method, event.path, body)
-
-    if (method !== 'GET' && res.statusCode < 400) {
-      await store.setJSON('db', db)
-    }
-    return res
+    return await apply(store, method, event.path, body)
   } catch (err) {
     console.error('Erro na API:', err)
     return json(500, { error: 'Erro interno da API.', detail: String((err && err.message) || err) })
