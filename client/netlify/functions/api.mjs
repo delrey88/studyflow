@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs'
+import { getStore, connectLambda } from '@netlify/blobs'
 
 const json = (status, body) => ({
   statusCode: status,
@@ -60,6 +60,7 @@ export function apply(db, method, rawPath, body = {}) {
 
 export async function handler(event) {
   try {
+    connectLambda(event)
     const store = getStore({ name: 'studyflow', consistency: 'strong' })
     const method = event.httpMethod
     const db = (await store.get('db', { type: 'json' })) ?? emptyDb()
