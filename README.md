@@ -1,5 +1,7 @@
 # StudyFlow 📚🚀
 
+![StudyFlow — Painel de Foco](docs/social-preview.png)
+
 O **StudyFlow** é uma aplicação **Full Stack** desenvolvida para ajudar estudantes a organizarem suas rotinas de estudos, gerenciarem tarefas pendentes e manterem o foco com um **Método Pomodoro Avançado**, painel de análise de foco e histórico de sessões persistido na nuvem — tudo em um **deploy unificado na Netlify**.
 
 ## ✨ Funcionalidades
