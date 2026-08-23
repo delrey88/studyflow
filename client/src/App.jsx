@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
-const API = 'https://studyflow-rzyn.onrender.com'
+const API = '/api'
 
 const TIMES = {
   work: 1500,
@@ -104,7 +104,7 @@ function App() {
     }
   }
 
-  // Buscar Tarefas e Histórico com tratamento para o Render acordar
+  // Buscar Tarefas e Histórico (API serverless na própria Netlify)
   useEffect(() => {
     setIsLoading(true)
     Promise.all([
@@ -275,13 +275,13 @@ function App() {
 
       {isLoading && (
         <div className="banner info">
-          <span className="pulse" /> Estabelecendo enlace com o servidor — o plano gratuito do Render pode levar até 50 s para acordar.
+          <span className="pulse" /> Sincronizando dados com o servidor…
         </div>
       )}
 
       {serverError && (
         <div className="banner warn">
-          <span className="pulse" /> Enlace instável ou inativo. Os registros podem não ser persistidos nesta sessão.
+          <span className="pulse" /> Não foi possível conectar ao servidor. As alterações podem não ser salvas.
         </div>
       )}
 

@@ -1,0 +1,11 @@
+# Fallback: lido se o "Base directory" do site estiver configurado como "client" na UI
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "../netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

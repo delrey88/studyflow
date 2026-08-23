@@ -1,0 +1,13 @@
+# Configuração principal (lida quando o site NÃO tem "Base directory" definido na UI)
+
+[build]
+  base = "client"
+  command = "npm run build"
+  publish = "dist"
+  functions = "../netlify/functions"
+
+# API serverless unificada — substitui o servidor Express do Render
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
