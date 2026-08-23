@@ -4,7 +4,7 @@
   base = "client"
   command = "npm run build"
   publish = "dist"
-  functions = "../netlify/functions"
+  functions = "netlify/functions"
 
 # API serverless unificada — substitui o servidor Express do Render
 [[redirects]]
