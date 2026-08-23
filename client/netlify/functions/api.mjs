@@ -61,7 +61,7 @@ export function apply(db, method, rawPath, body = {}) {
 export async function handler(event) {
   try {
     connectLambda(event)
-    const store = getStore({ name: 'studyflow', consistency: 'strong' })
+    const store = getStore('studyflow')
     const method = event.httpMethod
     const db = (await store.get('db', { type: 'json' })) ?? emptyDb()
 
