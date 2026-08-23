@@ -73,6 +73,6 @@ export async function handler(event) {
     return res
   } catch (err) {
     console.error('Erro na API:', err)
-    return json(500, { error: 'Erro interno da API.' })
+    return json(500, { error: 'Erro interno da API.', detail: String((err && err.message) || err) })
   }
 }
